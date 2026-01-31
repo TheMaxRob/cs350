@@ -186,14 +186,20 @@ void removeColorChannel(char *infile, char *outfile, char* channel) {
 	}
 
 	// I think it's theoretically faster to just have three separate loops and check the boolean once
-	// but that's super messy and probabyl not much faster
+	// but that's super messy and probably not much faster
 	for (unsigned int row = 0; row < ppm->height; row++) {
 		for (unsigned int col = 0; col < ppm->width; col++) {
 			if (removeRed) {
 				output->pixmap[0][row][col] = 0;
+				output->pixmap[1][row][col] = ppm->pixmap[1][row][col];
+				output->pixmap[2][row][col] = ppm->pixmap[2][row][col];
 			} else if (removeGreen) {
+				output->pixmap[0][row][col] = output->pixmap[0][row][col];
 				output->pixmap[1][row][col] = 0;
+				output->pixmap[2][row][col] = ppm->pixmap[2][row][col];
 			} else {
+				output->pixmap[0][row][col] = output->pixmap[0][row][col];
+				output->pixmap[1][row][col] = ppm->pixmap[1][row][col];
 				output->pixmap[2][row][col] = 0;
 			}
 		}
@@ -205,28 +211,28 @@ void removeColorChannel(char *infile, char *outfile, char* channel) {
 
 void sepia(char *infile, char *outfile) {
 	PPMImage *ppm = read_ppmfile(infile);
-        PPMImage *output = new_ppmimage(ppm->width, ppm->height, ppm->max);
+	PPMImage *output = new_ppmimage(ppm->width, ppm->height, ppm->max);
 
-        for (unsigned int row = 0; row < ppm->height; row++) {
-                for (unsigned int col = 0; row < ppm->width; col++) {
-                	unsigned int oldR = output->pixmap[0][row][col];
-                	unsigned int oldG = output->pixmap[1][row][col];
-                	unsigned int oldB = output->pixmap[2][row][col];
+	for (unsigned int row = 0; row < ppm->height; row++) {
+		for (unsigned int col = 0; col < ppm->width; col++) {
+			unsigned int oldR = output->pixmap[0][row][col];
+			unsigned int oldG = output->pixmap[1][row][col];
+			unsigned int oldB = output->pixmap[2][row][col];
 
-                	// Compute new values
-                	unsigned int newRed = (int)(0.393*oldR + 0.769*oldG + 0.189*oldB);
-                	unsigned int newGreen = (int)(0.349*oldR + 0.686*oldG + 0.168*oldB);
-                	unsigned int newBlue = (int)(0.272*oldR + 0.534*oldG + 0.131*oldB);
+			// Compute new values
+			unsigned int newRed = (int)(0.393*oldR + 0.769*oldG + 0.189*oldB);
+			unsigned int newGreen = (int)(0.349*oldR + 0.686*oldG + 0.168*oldB);
+			unsigned int newBlue = (int)(0.272*oldR + 0.534*oldG + 0.131*oldB);
 
 			// Assign new values
 			output->pixmap[0][row][col] = newRed;
 			output->pixmap[1][row][col] = newGreen;
 			output->pixmap[2][row][col] = newBlue;
-                }
-        }
-        write_ppmfile(output, outfile);
-        del_ppmimage(ppm);
-        del_ppmimage(output);
+		}
+	}
+	write_ppmfile(output, outfile);
+	del_ppmimage(ppm);
+	del_ppmimage(output);
 }
 
 void mirror(char *infile, char *outfile) {
