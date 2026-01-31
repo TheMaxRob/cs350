@@ -1,5 +1,8 @@
 #include "pbm.h"
-
+#include "stdlib.h"
+#include "stdio.h"
+#include "unistd.h"
+#include "string.h"
 
 // I'm not sure if you're meant to abstract the getopt() away from main,
 // but I saw the pattern online so I figured it was best practice
@@ -36,7 +39,8 @@ Option parse_command(int argc, char *argv[]) {
                         default:
                                 fprintf(stderr, "Usage: ppmcvt [-bgirsmtno] [FILE]\n");
                                 exit(1);
-        }
+        		}
+		}
         if (transform_count > 1) {
                 fprintf(stderr, "Error: Multiple transformations specified\n");
 		exit(1);
@@ -55,47 +59,6 @@ Option parse_command(int argc, char *argv[]) {
         }
 
         return options;
-}
-
-int main( int argc, char *argv[] )
-{
-	Option options = parse_commandline(argc, argv);
-
-	switch (options.mode) {
-		case 'b': convertToBitmap(options.infile, options.outfile); break;
-		case 'g': {
-			long pgmMax = strtol(opts.arg, NULL, 10);
-			if (pgmMax < 1 || pgmMax > 65535) {
-    				fprintf(stderr, "Error: Invalid max grayscale pixel value: %s; must be less than 65,536\n", pgmMax);
-    				exit(1);
-			}
-			grayscale(options.infile, options.outfile,(unsigned int)pgmMax);
-			break;
-		}
-		case 'i': isolate(opts.infile, opts.outfile, opts.arg); break;
-		case 'r': remove(opts.infile, opts.outfile, opts.arg); break;
-		case 's': sepia(opts.infile, opts.outfile); break;
-		case 'm': mirror(opts.infile, opts.outfile); break;
-		case 't': {
-			long scale = strtol(opts.arg, NULL, 10);
-			if (scale < 1 || scale > 8) {
-				fprintf(stderr, "Error: Invalid scale factor: %d; must be 1-8\n", opts.arg);
-				exit(1);
-			}
-			thumbnail(opts.infile, opts.outfile, (int)scale);
-			break;
-		}
-		case 'n': {
-			long scale = strtol(opts.arg, NULL, 10);
-			if (scale < 1 || scale > 8) {
-				fprintf(stderr, "Error: Invalid scale factor: %d; must be 1-8\n", opts.arg);
-				exit(1);
-			}
-			nup(opts.infile, opts.outfile, (int)scale);
-			break;
-		}
-	}
-	return 0;
 }
 
 
@@ -127,7 +90,7 @@ void convertToBitmap(char *infile, char *outfile) {
             		unsigned int sum = pbm->pixmap[row][col];
             		float average = sum / 3.0;
 
-            		if (average < ppm->pixmax / 2.0) {
+            		if (average < ppm->max / 2.0) {
                 		pbm->pixmap[row][col] = 1;
             		} else {
                 		pbm->pixmap[row][col] = 0;
@@ -140,7 +103,7 @@ void convertToBitmap(char *infile, char *outfile) {
     del_ppmimage(ppm);
 }
 
-void grayscale(char *infile, char*outfile, pgmMax) {
+void grayscale(char *infile, char*outfile, unsigned int pgmMax) {
 	PPMImage *ppm = read_ppmfile(infile);
 	PGMImage *pgm = new_pgmimage(ppm->width, ppm->height, pgmMax);
 
@@ -168,7 +131,7 @@ void grayscale(char *infile, char*outfile, pgmMax) {
                         float average = sum / 3.0;
 			float grayscale = average*pgm->max / ppm->max;
 
-                        if (average < ppm->pixmax / 2.0) {
+                        if (average < ppm->max / 2.0) {
                                 pgm->pixmap[row][col] = 1;
                         } else {
                                 pgm->pixmap[row][col] = 0;
@@ -187,17 +150,17 @@ void isolate(char *infile, char *outfile, char* channel) {
 	PPMImage *output = new_ppmimage(ppm->width, ppm->height, ppm->max);
 
 	// Determine channel
-	keepRed = strcmp(channel, "red") == 0);
-	keepGreen = strcmp(channel, "green") == 0);
-	keepBlue = strcmp(channel, "blue") == 0);
+	int keepRed = strcmp(channel, "red") == 0;
+	int keepGreen = strcmp(channel, "green") == 0;
+	int keepBlue = strcmp(channel, "blue") == 0;
 
 	if (!keepRed && !keepGreen && !keepBlue) {
 		fprintf(stderr, "Error: Invalid channel specification: (%s); should be 'red', 'green', or 'blue'\n", channel);
-		return NULL;
+		exit(1);
 	}
 	// Iterate and delete all other channel values
 	for (unsigned int row = 0; row < ppm->height; row++) {
-		for (unsigned int col = 0; row < ppm->row; col++) {
+		for (unsigned int col = 0; col < ppm->width; col++) {
 			if (keepRed) {
 				output->pixmap[1][row][col] = 0;
 				output->pixmap[2][row][col] = 0;
@@ -215,14 +178,14 @@ void isolate(char *infile, char *outfile, char* channel) {
 	del_ppmimage(output);
 }
 
-void remove(char *infile, char *outfile, char* channel) {
+void removeColorChannel(char *infile, char *outfile, char* channel) {
 	PPMImage *ppm = read_ppmfile(infile);
-	PPMImage *output = read_ppmfile(ppm->width, ppm->height, ppm->max);
+	PPMImage *output = new_ppmimage(ppm->width, ppm->height, ppm->max);
 
 	// Determine channel
-	removeRed = strcmp(channel, "red") == 0);
-	removeGreen = strcmp(channel, "green") == 0);
-	removeBlue = strcmp(channel, "blue") == 0);
+	int removeRed = strcmp(channel, "red") == 0;
+	int removeGreen = strcmp(channel, "green") == 0;
+	int removeBlue = strcmp(channel, "blue") == 0;
 
 	if (!removeRed && !removeGreen && !removeBlue) {
 		fprintf(stderr, "Error: Invalid channel specification: (%s); should be 'red', 'green' or 'blue\n", channel);
@@ -231,12 +194,12 @@ void remove(char *infile, char *outfile, char* channel) {
 
 	// I think it's theoretically faster to just have three separate loops and check the boolean once
 	// but that's super messy and probabyl not much faster
-	for (unsigned int row = 0; row < ppm->height, row++) {
+	for (unsigned int row = 0; row < ppm->height; row++) {
 		for (unsigned int col = 0; col < ppm->width; col++) {
 			if (removeRed) {
 				output->pixmap[0][row][col] = 0;
 			} else if (removeGreen) {
-				otuput->pixmap[1][row][col] = 0;
+				output->pixmap[1][row][col] = 0;
 			} else {
 				output->pixmap[2][row][col] = 0;
 			}
@@ -252,10 +215,10 @@ void sepia(char *infile, char *outfile) {
         PPMImage *output = new_ppmimage(ppm->width, ppm->height, ppm->max);
 
         for (unsigned int row = 0; row < ppm->height; row++) {
-                for (unsigned int col = 0; row < ppm->row; col++) {
-                	unsigned int oldR = output[0][row][col];
-                	unsigned int oldG = output[1][row][col];
-                	unsigned int oldB = output[2][row][col];
+                for (unsigned int col = 0; row < ppm->width; col++) {
+                	unsigned int oldR = output->pixmap[0][row][col];
+                	unsigned int oldG = output->pixmap[1][row][col];
+                	unsigned int oldB = output->pixmap[2][row][col];
 
                 	// Compute new values
                 	unsigned int newRed = (int)(0.393*oldR + 0.769*oldG + 0.189*oldB);
@@ -301,8 +264,8 @@ void mirror(char *infile, char *outfile) {
 
 void thumbnail(char *infile, char *outfile, int n) {
 	PPMImage *ppm = read_ppmfile(infile);
-	scaledHeight = ppm->height/2;
-	scaledWidth = ppm->width/2;
+	int scaledHeight = ppm->height/2;
+	int scaledWidth = ppm->width/2;
 	PPMImage *output = new_ppmimage(ppm->width, ppm->height, ppm->max);
 
 	for (unsigned int row = 0; row < scaledHeight; row++) {
@@ -320,15 +283,15 @@ void nup(char *infile, char *outfile, int n) {
 
 	// if 12x12 and we now have 3x3, n = 4
 	unsigned int scaleWidth = ppm->width/n; // 3
-	unsigned int scaleHeight = ppm->Height/n; // 3
+	unsigned int scaleHeight = ppm->height/n; // 3
 
 	// This is kind of like that sudoku leetcode problem but with an arbitrary scale
 	for (unsigned int row = 0; row < ppm->height; row++) {
-		for (unsigned int col = 0; col < ppm->col; col++) {
+		for (unsigned int col = 0; col < ppm->width; col++) {
 			// At this point we know which grid we are meant to be in, and we
 			// physically get there by scaling the tileRow and tileCol
 			unsigned int inRow = (row % scaleHeight) * n;
-			unsigned int inRow = (col % scaleWidth) * n;
+			unsigned int inCol = (col % scaleWidth) * n;
 
 			output->pixmap[0][row][col] = ppm->pixmap[0][inRow][inCol];
 			output->pixmap[1][row][col] = ppm->pixmap[1][inRow][inCol];
@@ -342,3 +305,45 @@ void nup(char *infile, char *outfile, int n) {
 }
 
 
+
+
+int main( int argc, char *argv[] ) 
+{
+	Option options = parse_command(argc, argv);
+
+	switch (options.mode) {
+		case 'b': convertToBitmap(options.infile, options.outfile); break;
+		case 'g': {
+			long pgmMax = strtol(options.arg, NULL, 10);
+			if (pgmMax < 1 || pgmMax > 65535) {
+    				fprintf(stderr, "Error: Invalid max grayscale pixel value: %ld; must be less than 65,536\n", options.arg);
+    				exit(1);
+			}
+			grayscale(options.infile, options.outfile,(unsigned int)pgmMax);
+			break;
+		}
+		case 'i': isolate(options.infile, options.outfile, options.arg); break;
+		case 'r': removeColorChannel`(options.infile, options.outfile, options.arg); break;
+		case 's': sepia(options.infile, options.outfile); break;
+		case 'm': mirror(options.infile, options.outfile); break;
+		case 't': {
+			long scale = strtol(options.arg, NULL, 10);
+			if (scale < 1 || scale > 8) {
+				fprintf(stderr, "Error: Invalid scale factor: %d; must be 1-8\n", scale);
+				exit(1);
+			}
+			thumbnail(options.infile, options.outfile, (int)scale);
+			break;
+		}
+		case 'n': {
+			long scale = strtol(options.arg, NULL, 10);
+			if (scale < 1 || scale > 8) {
+				fprintf(stderr, "Error: Invalid scale factor: %d; must be 1-8\n", scale);
+				exit(1);
+			}
+			nup(options.infile, options.outfile, (int)scale);
+			break;
+		}
+	}
+	return 0;
+}
