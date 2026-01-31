@@ -1,5 +1,5 @@
 #include "pbm.h"
-#include "stdlib.h"
+#include <stdlib.h>
 
 PPMImage * new_ppmimage( unsigned int w, unsigned int h, unsigned int m )
 {
@@ -28,7 +28,7 @@ for (int channel = 0; channel < 3; channel++) {
 		img->pixmap[channel][i] = (unsigned int *)malloc(w*sizeof(unsigned int));
 		if (img->pixmap[channel][i] == NULL) {
 			// Cleanup fail
-			for (unsigned int j = 0; j < h; j++) {
+			for (unsigned int j = 0; j < i; j++) {
 				free(img->pixmap[channel][j]);
 			}
 			free(img->pixmap[channel]);
@@ -69,10 +69,9 @@ if (img->pixmap == NULL) {
 for (unsigned int i = 0; i < h; i++) {
         img->pixmap[i] = (unsigned int *)malloc(sizeof(unsigned int) * w);
         if (img->pixmap[i] == NULL) {
-                for (unsigned int j; j < i; j++) {
+                for (unsigned int j = 0; j < i; j++) {
                         free(img->pixmap[j]);
                 }
-                free(img->pixmap);
                 free(img);
                 return NULL;
         }
@@ -98,16 +97,15 @@ PGMImage * new_pgmimage( unsigned int w, unsigned int h, unsigned int m )
 	for (unsigned int i = 0; i < h; i++) {
 			img->pixmap[i] = (unsigned int *)malloc(sizeof(unsigned int) * w);
 			if (img->pixmap[i] == NULL) {
-					for (unsigned int j; j < i; j++) {
-							free(img->pixmap[j]);
-					}
-					free(img->pixmap);
-					free(img);
-					return NULL;
-	}
+				for (unsigned int j; j < i; j++) {
+					free(img->pixmap[j]);
+				}
 
-	return img;
+				free(img);
+				return NULL;
+			}
 	}
+	return img;
 }
 
 void del_ppmimage( PPMImage * img )
@@ -121,7 +119,6 @@ void del_ppmimage( PPMImage * img )
 			}
 			free(img->pixmap[c]);
 		}
-		free(img->pixmap);
 	}
 	free(img);
 	}
@@ -134,7 +131,6 @@ void del_ppmimage( PPMImage * img )
 		for (unsigned int i = 0; i < img->height; i++) {
 			free(img->pixmap[i]);
 		}
-		free(img->pixmap);
 	}
 	free(img);
 }
@@ -147,7 +143,6 @@ void del_pbmimage( PBMImage * img )
 			for (unsigned int i = 0; i < img->height; i++) {
 					free(img->pixmap[i]);
 			}
-			free(img->pixmap);
 	}
 	free(img);
 }

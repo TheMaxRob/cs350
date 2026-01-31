@@ -15,12 +15,10 @@ typedef struct {
 
 Option parse_command(int argc, char *argv[]) {
         Option options = {0};
-
         options.mode = 'b';
         int option;
         // Make sure only one transform specified
         int transform_count = 0;
-
         // loop through arguments and case switch?
         while ((option = getopt(argc, argv, "bg:i:r:smt:n:o:")) != -1) {
                 switch (option) {
@@ -57,52 +55,50 @@ Option parse_command(int argc, char *argv[]) {
                 fprintf(stderr, "Error: No output file specified\n");
                 exit(1);
         }
-
         return options;
 }
 
 
 // Transformations
 void convertToBitmap(char *infile, char *outfile) {
-    	PPMImage *ppm = read_ppmfile(infile);
-	PBMImage *pbm = new_pbmimage(ppm->width, ppm->height);
+        PPMImage *ppm = read_ppmfile(infile);
+        PBMImage *pbm = new_pbmimage(ppm->width, ppm->height);
 
-    	// Initialize new map
-    	for (unsigned int row = 0; row < ppm->height; row++) {
-        	for (unsigned int col = 0; col < ppm->width; col++) {
-            		pbm->pixmap[row][col] = 0;
-        	}
-   	}
+        // Initialize new map
+        for (unsigned int row = 0; row < ppm->height; row++) {
+                for (unsigned int col = 0; col < ppm->width; col++) {
+                        pbm->pixmap[row][col] = 0;
+                }
+        }
 
-    	// Sum values
-    	for (int c = 0; c < 3; c++) {
-        	for (unsigned int row = 0; row < ppm->height; row++) {
-            		for (unsigned int col = 0; col < ppm->width; col++) {
-                		unsigned int val = ppm->pixmap[c][row][col];
-                		pbm->pixmap[row][col] += val;
-            		}
-		}
-    	}
+        // Sum values
+        for (int c = 0; c < 3; c++) {
+                for (unsigned int row = 0; row < ppm->height; row++) {
+                        for (unsigned int col = 0; col < ppm->width; col++) {
+                                unsigned int val = ppm->pixmap[c][row][col];
+                                pbm->pixmap[row][col] += val;
+                        }
+                }
+        }
 
-    	// Convert to black/white
-    	for (unsigned int row = 0; row < ppm->height; row++) {
-        	for (unsigned int col = 0; col < ppm->width; col++) {
-            		unsigned int sum = pbm->pixmap[row][col];
-            		float average = sum / 3.0;
+        // Convert to black/white
+        for (unsigned int row = 0; row < ppm->height; row++) {
+                for (unsigned int col = 0; col < ppm->width; col++) {
+                        unsigned int sum = pbm->pixmap[row][col];
+                        float average = sum / 3.0;
 
-            		if (average < ppm->max / 2.0) {
-                		pbm->pixmap[row][col] = 1;
-            		} else {
-                		pbm->pixmap[row][col] = 0;
-            		}
-        	}
-    	}
+                        if (average < ppm->max / 2.0) {
+                                pbm->pixmap[row][col] = 1;
+                        } else {
+                                pbm->pixmap[row][col] = 0;
+                        }
+                }
+        }
 
-    write_pbmfile(pbm, outfile);
-    del_pbmimage(pbm);
-    del_ppmimage(ppm);
+        write_pbmfile(pbm, outfile);
+        del_pbmimage(pbm);
+        del_ppmimage(ppm);
 }
-
 void grayscale(char *infile, char*outfile, unsigned int pgmMax) {
 	PPMImage *ppm = read_ppmfile(infile);
 	PGMImage *pgm = new_pgmimage(ppm->width, ppm->height, pgmMax);
@@ -124,20 +120,14 @@ void grayscale(char *infile, char*outfile, unsigned int pgmMax) {
                 }
         }
 
-        // Grayscale values
-        for (unsigned int row = 0; row < ppm->height; row++) {
-                for (unsigned int col = 0; col < ppm->width; col++) {
-                        unsigned int sum = pgm->pixmap[row][col];
-                        float average = sum / 3.0;
-			float grayscale = average*pgm->max / ppm->max;
-
-                        if (average < ppm->max / 2.0) {
-                                pgm->pixmap[row][col] = 1;
-                        } else {
-                                pgm->pixmap[row][col] = 0;
-                        }
-                }
-        }
+	// Grayscale values
+	for (unsigned int row = 0; row < ppm->height; row++) {
+    		for (unsigned int col = 0; col < ppm->width; col++) {
+        		unsigned int sum = pgm->pixmap[row][col];
+        		float average = sum / 3.0;
+       	 		pgm->pixmap[row][col] = (unsigned int)(average * pgm->max / ppm->max);  // ✅ Use the grayscale value!
+	   	 }
+	}
 	write_pgmfile(pgm, outfile);
 	del_pgmimage(pgm);
 	del_ppmimage(ppm);
@@ -162,14 +152,17 @@ void isolate(char *infile, char *outfile, char* channel) {
 	for (unsigned int row = 0; row < ppm->height; row++) {
 		for (unsigned int col = 0; col < ppm->width; col++) {
 			if (keepRed) {
+				output->pixmap[0][row][col] = ppm->pixmap[0][row][col];
 				output->pixmap[1][row][col] = 0;
 				output->pixmap[2][row][col] = 0;
 			} else if (keepGreen) {
 				output->pixmap[0][row][col] = 0;
+				output->pixmap[1][row][col] = ppm->pixmap[1][row][col];
 				output->pixmap[2][row][col] = 0;
 			} else {
 				output->pixmap[0][row][col] = 0;
 				output->pixmap[1][row][col] = 0;
+				output->pixmap[2][row][col] = ppm->pixmap[2][row][col];
 			}
 		}
 	}
@@ -310,26 +303,25 @@ void nup(char *infile, char *outfile, int n) {
 int main( int argc, char *argv[] ) 
 {
 	Option options = parse_command(argc, argv);
-
 	switch (options.mode) {
 		case 'b': convertToBitmap(options.infile, options.outfile); break;
 		case 'g': {
 			long pgmMax = strtol(options.arg, NULL, 10);
 			if (pgmMax < 1 || pgmMax > 65535) {
-    				fprintf(stderr, "Error: Invalid max grayscale pixel value: %ld; must be less than 65,536\n", options.arg);
+    				fprintf(stderr, "Error: Invalid max grayscale pixel value: %s; must be less than 65,536\n", options.arg);
     				exit(1);
 			}
 			grayscale(options.infile, options.outfile,(unsigned int)pgmMax);
 			break;
 		}
 		case 'i': isolate(options.infile, options.outfile, options.arg); break;
-		case 'r': removeColorChannel`(options.infile, options.outfile, options.arg); break;
+		case 'r': removeColorChannel(options.infile, options.outfile, options.arg); break;
 		case 's': sepia(options.infile, options.outfile); break;
 		case 'm': mirror(options.infile, options.outfile); break;
 		case 't': {
 			long scale = strtol(options.arg, NULL, 10);
 			if (scale < 1 || scale > 8) {
-				fprintf(stderr, "Error: Invalid scale factor: %d; must be 1-8\n", scale);
+				fprintf(stderr, "Error: Invalid scale factor: %d; must be 1-8\n", (int)scale);
 				exit(1);
 			}
 			thumbnail(options.infile, options.outfile, (int)scale);
@@ -338,7 +330,7 @@ int main( int argc, char *argv[] )
 		case 'n': {
 			long scale = strtol(options.arg, NULL, 10);
 			if (scale < 1 || scale > 8) {
-				fprintf(stderr, "Error: Invalid scale factor: %d; must be 1-8\n", scale);
+				fprintf(stderr, "Error: Invalid scale factor: %d; must be 1-8\n", (int)scale);
 				exit(1);
 			}
 			nup(options.infile, options.outfile, (int)scale);
