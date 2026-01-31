@@ -173,40 +173,39 @@ void isolate(char *infile, char *outfile, char* channel) {
 
 void removeColorChannel(char *infile, char *outfile, char* channel) {
 	PPMImage *ppm = read_ppmfile(infile);
-	PPMImage *output = new_ppmimage(ppm->width, ppm->height, ppm->max);
+    	PPMImage *output = new_ppmimage(ppm->width, ppm->height, ppm->max);
 
-	// Determine channel
-	int removeRed = strcmp(channel, "red") == 0;
-	int removeGreen = strcmp(channel, "green") == 0;
-	int removeBlue = strcmp(channel, "blue") == 0;
+    	int removeRed = strcmp(channel, "red") == 0;
+    	int removeGreen = strcmp(channel, "green") == 0;
+    	int removeBlue = strcmp(channel, "blue") == 0;
 
-	if (!removeRed && !removeGreen && !removeBlue) {
-		fprintf(stderr, "Error: Invalid channel specification: (%s); should be 'red', 'green' or 'blue\n", channel);
-		exit(1);
-	}
+    	if (!removeRed && !removeGreen && !removeBlue) {
+        	fprintf(stderr,
+            	"Error: Invalid channel specification: (%s); should be 'red', 'green' or 'blue'\n", channel);
+        	exit(1);
+   	}
 
-	// I think it's theoretically faster to just have three separate loops and check the boolean once
-	// but that's super messy and probably not much faster
-	for (unsigned int row = 0; row < ppm->height; row++) {
-		for (unsigned int col = 0; col < ppm->width; col++) {
-			if (removeRed) {
-				output->pixmap[0][row][col] = 0;
-				output->pixmap[1][row][col] = ppm->pixmap[1][row][col];
-				output->pixmap[2][row][col] = ppm->pixmap[2][row][col];
-			} else if (removeGreen) {
-				output->pixmap[0][row][col] = output->pixmap[0][row][col];
-				output->pixmap[1][row][col] = 0;
-				output->pixmap[2][row][col] = ppm->pixmap[2][row][col];
-			} else {
-				output->pixmap[0][row][col] = output->pixmap[0][row][col];
-				output->pixmap[1][row][col] = ppm->pixmap[1][row][col];
-				output->pixmap[2][row][col] = 0;
-			}
-		}
-	}
-	write_ppmfile(output, outfile);
-	del_ppmimage(ppm);
-	del_ppmimage(output);
+    	for (unsigned int row = 0; row < ppm->height; row++) {
+        	for (unsigned int col = 0; col < ppm->width; col++) {
+            		if (removeRed) {
+                		output->pixmap[0][row][col] = 0;
+                		output->pixmap[1][row][col] = ppm->pixmap[1][row][col];
+                		output->pixmap[2][row][col] = ppm->pixmap[2][row][col];
+    			} else if (removeGreen) {
+                		output->pixmap[0][row][col] = ppm->pixmap[0][row][col];
+                		output->pixmap[1][row][col] = 0;
+                		output->pixmap[2][row][col] = ppm->pixmap[2][row][col];
+            		} else { // removeBlue
+                		output->pixmap[0][row][col] = ppm->pixmap[0][row][col];
+                		output->pixmap[1][row][col] = ppm->pixmap[1][row][col];
+                		output->pixmap[2][row][col] = 0;
+            		}
+        	}
+    	}
+
+    	write_ppmfile(output, outfile);
+    	del_ppmimage(ppm);
+    	del_ppmimage(output);
 }
 
 void sepia(char *infile, char *outfile) {
@@ -215,15 +214,25 @@ void sepia(char *infile, char *outfile) {
 
 	for (unsigned int row = 0; row < ppm->height; row++) {
 		for (unsigned int col = 0; col < ppm->width; col++) {
-			unsigned int oldR = output->pixmap[0][row][col];
-			unsigned int oldG = output->pixmap[1][row][col];
-			unsigned int oldB = output->pixmap[2][row][col];
+			unsigned int oldR = ppm->pixmap[0][row][col];
+			unsigned int oldG = ppm->pixmap[1][row][col];
+			unsigned int oldB = ppm->pixmap[2][row][col];
 
 			// Compute new values
-			unsigned int newRed = (int)(0.393*oldR + 0.769*oldG + 0.189*oldB);
-			unsigned int newGreen = (int)(0.349*oldR + 0.686*oldG + 0.168*oldB);
-			unsigned int newBlue = (int)(0.272*oldR + 0.534*oldG + 0.131*oldB);
+			unsigned int newRed = (393*oldR + 769*oldG + 189*oldB) / 1000;
+			unsigned int newGreen = (349*oldR + 686*oldG + 168*oldB) / 1000;
+			unsigned int newBlue = (272*oldR + 534*oldG + 131*oldB) / 1000;
 
+			// Ceiling
+			if (newRed > output->max) {
+				newRed = output->max;
+			}
+			if (newGreen > output->max) {
+				newGreen = output->max;
+			}
+			if (newBlue > output->max) {
+				newGreen = output->max;
+			}
 			// Assign new values
 			output->pixmap[0][row][col] = newRed;
 			output->pixmap[1][row][col] = newGreen;
