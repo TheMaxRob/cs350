@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
     }
 
     // get semaphore
-    if ((semid=semget(PHONE_KEY,1,0660))== -1) {
+    if ((semid=semget(PHONE_KEY,2,0660))== -1) {
         perror("semget");
         exit(1);
     }
@@ -113,8 +113,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Block while we wait for our row
-    struct sembuf down;
-    down.sem_op = -1; down.sem_flg = 0; down.sem_num = 0;
+    // Found this nice pattern online
+    struct sembuf down = { SEM_REGISTER, -1, 0 };
     if (semop(semid, &down, 1) < 0) { perror("semop"); exit(1); }
 
     // Find row
@@ -131,9 +131,9 @@ int main(int argc, char *argv[]) {
 	exit(1);
     }
 
-    // Found this online
-    struct sembuf lock = { 0, -1, 0 };
-    struct sembuf unlock = { 0, 1, 0 };
+
+    struct sembuf lock = { SEM_MUTEX, -1, 0 };
+    struct sembuf unlock = { SEM_MUTEX, 1, 0 };
 
 
     // set as unlock to prepare for loop

@@ -11,6 +11,8 @@
 #define MSG_PERFECT 2 // perfect found
 #define MAX_PROCESSES 20
 #define MAX_PERFECT 20
+#define SEM_REGISTER 1
+#define SEM_MUTEX 0
 
 typedef struct {
     pid_t pid;

@@ -51,7 +51,7 @@ int main() {
         shm->manage_pid = getpid();
 
         // Semaphore
-        if ((semid = semget(PHONE_KEY, 1, IPC_CREAT |0660))==-1) {
+        if ((semid = semget(PHONE_KEY, 2, IPC_CREAT |0660))==-1) {
             perror("semget");
             exit(1);
         }
@@ -100,7 +100,7 @@ int main() {
                 shm->processes[row].candidates = 0;
                 shm->processes[row].skipped = 0;
                 
-                struct sembuf up = { 0, 1, 0 };
+                struct sembuf up = { SEM_REGISTER, 1, 0 };
                 semop(semid, &up, 1);
             } else if (msg.mtype == MSG_PERFECT) {
                 // perfect found, update perfects map, other already handled in compute.c
