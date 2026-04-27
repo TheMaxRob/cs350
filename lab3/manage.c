@@ -14,6 +14,7 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include <string.h>
+#include <errno.h>
 #include "defs.h"
 
 static SharedMemory *shm = NULL;
@@ -77,6 +78,9 @@ int main() {
         Message msg;
         while (1) {
             if (msgrcv(qid, &msg, sizeof(Message) - sizeof(long),0,0) < 0) {
+                if (errno == EINTR) {
+                    break;
+                }
                 perror("msgrcv");
                 continue;
             }
