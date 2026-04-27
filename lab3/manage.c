@@ -13,6 +13,7 @@
 #include <sys/shm.h>
 #include <sys/sem.h>
 #include <sys/msg.h>
+#include <string.h>
 #include "defs.h"
 
 static SharedMemory *shm = NULL;

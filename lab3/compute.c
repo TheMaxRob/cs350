@@ -18,7 +18,7 @@ static int my_row = -1;
 
 int isPerfect(int n) {
     if (n < 2) return 0;
-    int sum = 1;
+    long sum = 1;
     for (int i = 2; i <= sqrt(n); i++) {
         if (n % i == 0) {
             sum += i;
@@ -55,8 +55,7 @@ int main(int argc, char *argv[]) {
     int sid;
     int semid;
     int msgid;
-    
-
+ 
     if (argc != 2) {
         fprintf(stderr, "Usage: compute [START]\n");
         exit(1);
@@ -125,6 +124,11 @@ int main(int argc, char *argv[]) {
             my_row = i;
             break;
         }
+    }
+
+    if (my_row < 0) {
+	fprintf(stderr, "Could not find row, pid=%d\n", my_pid);
+	exit(1);
     }
 
     // Found this online
