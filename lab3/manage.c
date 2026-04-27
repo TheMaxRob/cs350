@@ -67,7 +67,7 @@ int main() {
         sigaddset(&mask, SIGINT);
         sigaddset(&mask, SIGQUIT);
         sigaddset(&mask, SIGHUP);
-        action.sa_flags = 0;
+        action.sa_flags = SA_INTERRUPT;
         action.sa_mask = mask;
         action.sa_handler = shutdown_handler;
         sigaction(SIGINT,  &action, NULL);
