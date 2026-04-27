@@ -23,15 +23,16 @@ static int semid = -1;
 static int qid = -1;
 
 void shutdown_handler(int sig) {
+    fprintf(stderr, "shutdown_handler called, sid=%d semid=%d qid=%d\n", sid, semid, qid);
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (shm->processes[i].pid > 0)
             kill(shm->processes[i].pid, SIGINT);
     }
     sleep(5);
     shmdt(shm);
-    shmctl(sid, IPC_RMID, NULL);
-    semctl(semid, 0, IPC_RMID);
-    msgctl(qid, IPC_RMID, NULL);
+    if (shmctl(sid, IPC_RMID, NULL) < 0) perror("shmctl");
+    if (semctl(semid, 0, IPC_RMID) < 0) perror("semctl");
+    if (msgctl(qid, IPC_RMID, NULL) < 0) perror("msgctl");
     exit(0);
 }
 
