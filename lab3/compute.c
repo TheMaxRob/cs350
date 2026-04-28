@@ -43,6 +43,9 @@ void mark_tested(int n) {
 // if terminated, clear row and just end program immediately
 void shutdown_handler(int sig) {
     if (my_row >= 0) {
+        shm->totals.found += shm->processes[my_row].found;
+        shm->totals.candidates += shm->processes[my_row].candidates;
+        shm->totals.skipped += shm->processes[my_row].skipped;
         memset(&shm->processes[my_row], 0, sizeof(ProcessRow));
     }
     if (shm != NULL) {

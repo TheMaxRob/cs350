@@ -23,7 +23,6 @@ static int semid = -1;
 static int qid = -1;
 
 void shutdown_handler(int sig) {
-    fprintf(stderr, "shutdown_handler called, sid=%d semid=%d qid=%d\n", sid, semid, qid);
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (shm->processes[i].pid > 0)
             kill(shm->processes[i].pid, SIGINT);
